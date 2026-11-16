@@ -21,6 +21,33 @@ st.set_page_config(
 )
 
 
+def safe_get_api_key() -> str | None:
+    """
+    Safely retrieve GEMINI_API_KEY from environment or Streamlit secrets without crashing.
+
+    WHY: If secrets.toml is missing (common on cloud hosts like Render), accessing st.secrets
+    directly raises StreamlitSecretNotFoundError. Wrapping access prevents the app from crashing.
+    """
+    key = os.getenv("GEMINI_API_KEY")
+    if key:
+        return key
+
+    try:
+        if hasattr(st, "secrets"):
+            try:
+                if "GEMINI_API_KEY" in st.secrets:
+                    key = st.secrets["GEMINI_API_KEY"]
+                    if key:
+                        os.environ["GEMINI_API_KEY"] = key
+                        return key
+            except Exception:
+                pass
+    except Exception:
+        pass
+
+    return None
+
+
 def initialize_session_state():
     """
     Initialize persistent state variables across Streamlit rerun cycles.
@@ -98,11 +125,12 @@ with st.sidebar:
         if uploaded_jd:
             jd_path = save_uploaded_file(uploaded_jd)
 
-    # WHY: Allow cloud visitors or reviewers to input their key if not in cloud secrets
-    api_key_set = bool(os.getenv("GEMINI_API_KEY") or (hasattr(st, "secrets") and "GEMINI_API_KEY" in st.secrets))
-    if not api_key_set:
+    # WHY: Allow cloud visitors or reviewers to input their key if not in cloud environment
+    api_key_val = safe_get_api_key()
+    if not api_key_val:
         st.divider()
         st.header("🔑 API Key Setup")
+        st.caption("No GEMINI_API_KEY detected. Enter your key below or add it to Render's Environment settings.")
         custom_key = st.text_input("Enter GEMINI_API_KEY:", type="password")
         if custom_key:
             os.environ["GEMINI_API_KEY"] = custom_key
@@ -123,7 +151,9 @@ with st.sidebar:
 # Processing: Ingestion, Vector DB, and Skill Gap
 # ---------------------------------------------------------
 if analyze_clicked:
-    if not resume_path or not jd_path:
+    if not safe_get_api_key():
+        st.error("⚠️ GEMINI_API_KEY is missing! Please enter your key in the sidebar under 'API Key Setup' or add it to Render's Environment settings.")
+    elif not resume_path or not jd_path:
         st.error("Please provide both a Resume and a Job Description before analyzing.")
     else:
         with st.spinner("Extracting text chunks and computing Gemini embeddings in ChromaDB..."):
