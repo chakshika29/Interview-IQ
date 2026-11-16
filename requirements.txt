@@ -1,0 +1,21 @@
+# Core RAG & Vector Database
+chromadb==1.5.9
+rank-bm25==0.2.2
+
+# LLM & Embeddings (Google Gemini API)
+google-genai==2.34.0
+
+# Document Ingestion & Data Validation
+pypdf==6.21.4
+pydantic==2.14.1
+python-dotenv==1.2.4
+pandas==3.1.0
+numpy==2.5.4
+
+# Web Frameworks & UI
+fastapi==0.163.1
+uvicorn==0.54.0
+streamlit==1.66.1
+
+# Testing
+pytest==9.2.0

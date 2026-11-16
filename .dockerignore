@@ -1,0 +1,15 @@
+# WHY: Prevent sensitive local environments, secrets, personal data, and large caches from entering container layers
+venv/
+.venv/
+.env
+data/
+.cache/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.git/
+.gitignore
+.pytest_cache/
+eval/
+tests/
