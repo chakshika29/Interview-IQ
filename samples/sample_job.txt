@@ -1,0 +1,23 @@
+Title: Senior AI Engineer - Agentic Systems & RAG
+Company: ApexAI Solutions
+Location: Remote / New York, NY
+
+Overview:
+ApexAI Solutions is seeking a Senior AI Engineer to design and implement production-grade agentic workflows, scalable Retrieval-Augmented Generation (RAG) systems, and enterprise LLM integration pipelines. In this role, you will lead the architecture of stateful AI workflows and build high-performance Python services.
+
+Key Responsibilities:
+- Agentic Architecture: Architect and deploy cyclic, multi-agent systems using LangGraph and LangChain for autonomous task decomposition, state management, and human-in-the-loop workflows.
+- RAG & Knowledge Retrieval: Design hybrid search pipelines combining dense vector embeddings (ChromaDB, Pinecone) with sparse BM25 keyword matching and reciprocal rank fusion.
+- Backend Engineering: Develop high-throughput, low-latency REST and streaming APIs using Python, FastAPI, AsyncIO, and Pydantic.
+- LLM System Optimization: Implement structured JSON generation, optimize prompt context budgets, and implement caching layers for cost and rate-limit management.
+
+Must-Have Qualifications:
+- 3+ years of professional backend software development experience in Python (FastAPI, AsyncIO, Pydantic).
+- Demonstrated experience building multi-agent systems with LangGraph (state management, conditional branching, checkpointers).
+- Hands-on experience with vector databases, dense embeddings, and hybrid retrieval techniques.
+- Solid background in containerization (Docker) and modern CI/CD deployment pipelines.
+
+Nice-to-Haves:
+- Experience integrating Microsoft Copilot Studio, Power Platform connectors, or Azure OpenAI services.
+- Familiarity with AI evaluation frameworks (Ragas, DeepEval, LangSmith) and automated benchmark suites.
+- Experience with GraphRAG and agentic memory architectures.

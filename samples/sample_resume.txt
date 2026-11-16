@@ -1,0 +1,36 @@
+ALEX MERCER
+San Francisco, CA | alex.mercer@example.com | https://linkedin.com/in/alexmercer-fake | https://github.com/alexmercer-fake
+
+PROFESSIONAL SUMMARY
+Results-driven AI Software Engineer with expertise in building production-grade RAG systems, agentic workflows, and high-performance Python backends. Experienced in LangGraph cyclic orchestrations, FastAPI microservices, and hybrid retrieval search architectures.
+
+TECHNICAL SKILLS
+- Languages: Python, SQL, TypeScript
+- AI & Agent Frameworks: LangGraph, LangChain, ChromaDB, BM25, Google GenAI SDK, HuggingFace
+- Backend & Cloud: FastAPI, AsyncIO, Pydantic, Flask, Docker, AWS (ECS, S3, RDS), PostgreSQL, Redis
+- Engineering Practices: Unit Testing (pytest), CI/CD (GitHub Actions), RESTful API Design
+
+PROFESSIONAL EXPERIENCE
+CognitiveAI Labs - AI Engineer | July 2024 - Present
+- Designed and deployed an enterprise multi-agent research assistant using LangGraph, coordinating 4 specialized agents with persistent state checkpointers in PostgreSQL.
+- Implemented hybrid search combining dense semantic embeddings with BM25 lexical ranking and Reciprocal Rank Fusion, improving information retrieval recall by 28%.
+- Built high-concurrency FastAPI microservices handling 400+ requests per second with sub-200ms latency using AsyncIO and connection pooling.
+
+DataSphere Corp - Junior Python Developer | June 2023 - June 2024
+- Engineered ETL pipelines in Python for unstructured document processing, chunking text using sentence boundary analysis for vector indexing.
+- Implemented automated evaluation workflows using LLM-as-a-judge scoring to benchmark retrieval quality across diverse chunk configurations.
+- Containerized microservices using Docker and automated deployment pipelines via GitHub Actions.
+
+KEY PROJECTS
+DocuGraph - Stateful Knowledge Graph & RAG Platform
+- Built a modular knowledge graph RAG platform integrating AST parsing and vector embeddings for code repository question-answering.
+- Utilized LangGraph human-in-the-loop breakpoints to allow engineer approvals before executing refactoring suggestions.
+- Tech Stack: Python, FastAPI, LangGraph, ChromaDB, Docker
+
+AgentFlow - Multi-Agent Task Orchestrator
+- Open-source Python library for coordinating multi-agent workflows with structured JSON outputs and automated exponential backoff retries.
+- Over 800+ GitHub stars and 10,000+ downloads.
+- Tech Stack: Python, Pydantic, AsyncIO, pytest
+
+EDUCATION
+University of Washington - B.S. in Computer Science | 2019 - 2023
