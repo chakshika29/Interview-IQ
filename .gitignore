@@ -1,0 +1,22 @@
+# Environment variables and API keys (CRITICAL: NEVER COMMIT)
+.env
+
+# Virtual environment
+venv/
+.venv/
+
+# Sensitive data directory (Candidate resumes contain personal contact details)
+data/
+
+# Local embedding and document caches
+.cache/
+
+# Python bytecode & cache files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Testing artifacts
+.pytest_cache/
+.coverage
+htmlcov/
