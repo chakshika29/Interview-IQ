@@ -15,7 +15,27 @@ from rank_bm25 import BM25Okapi
 load_dotenv()
 
 EMBED_MODEL = "gemini-embedding-001"
-client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
+
+
+def get_client() -> genai.Client:
+    """
+    Get or initialize the Google GenAI client from environment or Streamlit secrets.
+
+    WHY: In cloud deployments (Streamlit Cloud, Render, Railway, Hugging Face Spaces),
+    API keys are provided via cloud secrets or container environment variables.
+    """
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        try:
+            import streamlit as st
+            api_key = st.secrets.get("GEMINI_API_KEY")
+            if api_key:
+                os.environ["GEMINI_API_KEY"] = api_key
+        except Exception:
+            pass
+    if not api_key:
+        raise ValueError("GEMINI_API_KEY is not set. Please set it in .env, environment, or Streamlit secrets.")
+    return genai.Client(api_key=api_key)
 
 # WHY: Embedding caching directory and file path
 CACHE_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".cache")
@@ -70,7 +90,8 @@ def embed_batch_with_retry(
 
     for attempt in range(max_retries):
         try:
-            resp = client.models.embed_content(
+            client_instance = get_client()
+            resp = client_instance.models.embed_content(
                 model=EMBED_MODEL,
                 contents=texts,
                 config=types.EmbedContentConfig(task_type=task),

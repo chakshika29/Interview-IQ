@@ -21,6 +21,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # WHY: Copy application source code and sample data (excluding secrets via .dockerignore)
 COPY app/ app/
+COPY samples/ samples/
 COPY streamlit_app.py .
 
 # WHY: Expose ports for both the FastAPI REST backend (8000) and the Streamlit UI (8501)

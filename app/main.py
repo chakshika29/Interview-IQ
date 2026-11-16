@@ -35,6 +35,10 @@ def get_or_create_retriever() -> Retriever:
             jd = load_document("data/job.txt", "job_description")
             res = load_document("data/resume.pdf", "resume")
             r.add(jd + res)
+        elif os.path.exists("samples/sample_job.txt") and os.path.exists("samples/sample_resume.txt"):
+            jd = load_document("samples/sample_job.txt", "job_description")
+            res = load_document("samples/sample_resume.txt", "resume")
+            r.add(jd + res)
         app_state["retriever"] = r
     return app_state["retriever"]
 
@@ -107,12 +111,16 @@ def analyze_documents(req: AnalyzeRequest):
             jd_chunks.append(Chunk(id=f"api-jd-{i}", text=text, source="job_description", page=1))
     elif req.use_sample_data and os.path.exists("data/job.txt"):
         jd_chunks = load_document("data/job.txt", "job_description")
+    elif req.use_sample_data and os.path.exists("samples/sample_job.txt"):
+        jd_chunks = load_document("samples/sample_job.txt", "job_description")
 
     if req.resume_text:
         for i, text in enumerate(split_text_by_boundaries(req.resume_text)):
             resume_chunks.append(Chunk(id=f"api-res-{i}", text=text, source="resume", page=1))
     elif req.use_sample_data and os.path.exists("data/resume.pdf"):
         resume_chunks = load_document("data/resume.pdf", "resume")
+    elif req.use_sample_data and os.path.exists("samples/sample_resume.txt"):
+        resume_chunks = load_document("samples/sample_resume.txt", "resume")
 
     if not jd_chunks or not resume_chunks:
         raise HTTPException(

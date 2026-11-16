@@ -82,17 +82,31 @@ with st.sidebar:
             resume_path = default_resume
             jd_path = default_jd
             st.info("Loaded `data/resume.pdf` & `data/job.txt`")
+        elif os.path.exists("samples/sample_resume.txt") and os.path.exists("samples/sample_job.txt"):
+            resume_path = "samples/sample_resume.txt"
+            jd_path = "samples/sample_job.txt"
+            st.info("Loaded portfolio sample documents from `samples/`")
         else:
-            st.warning("Sample data files not found in `data/`. Please upload files below.")
+            st.warning("Sample files not found. Please upload documents below.")
 
     if not use_defaults:
-        uploaded_resume = st.file_uploader("Upload Resume (PDF)", type=["pdf"])
+        uploaded_resume = st.file_uploader("Upload Resume (PDF or TXT)", type=["pdf", "txt"])
         uploaded_jd = st.file_uploader("Upload Job Description (PDF or TXT)", type=["pdf", "txt"])
 
         if uploaded_resume:
             resume_path = save_uploaded_file(uploaded_resume)
         if uploaded_jd:
             jd_path = save_uploaded_file(uploaded_jd)
+
+    # WHY: Allow cloud visitors or reviewers to input their key if not in cloud secrets
+    api_key_set = bool(os.getenv("GEMINI_API_KEY") or (hasattr(st, "secrets") and "GEMINI_API_KEY" in st.secrets))
+    if not api_key_set:
+        st.divider()
+        st.header("🔑 API Key Setup")
+        custom_key = st.text_input("Enter GEMINI_API_KEY:", type="password")
+        if custom_key:
+            os.environ["GEMINI_API_KEY"] = custom_key
+            st.success("API key registered for session!")
 
     st.divider()
     st.header("⚙️ Adaptive Engine")
