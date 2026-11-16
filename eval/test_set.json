@@ -1,0 +1,258 @@
+[
+  {
+    "id": "q01",
+    "question": "What framework is required for designing cyclic agentic graphs and state management?",
+    "expected_keywords": ["LangGraph"],
+    "expected_fact": "LangGraph is required for cyclic agentic graphs and state management.",
+    "source": "job_description",
+    "reference_answer": "LangGraph is required for designing stateful cyclic agentic graphs and multi-agent coordination."
+  },
+  {
+    "id": "q02",
+    "question": "Which low-code Microsoft platform is specified for building AI assistants?",
+    "expected_keywords": ["Copilot Studio", "Microsoft Copilot Studio"],
+    "expected_fact": "Microsoft Copilot Studio is specified for building enterprise AI assistants.",
+    "source": "job_description",
+    "reference_answer": "Microsoft Copilot Studio is used to build, customize, and deploy enterprise AI assistants."
+  },
+  {
+    "id": "q03",
+    "question": "How many years of professional Python backend development experience does the job require?",
+    "expected_keywords": ["3+", "3 years", "3+ years"],
+    "expected_fact": "3+ years of professional backend software development experience in Python is required.",
+    "source": "job_description",
+    "reference_answer": "The candidate must have 3+ years of professional backend software development experience in Python."
+  },
+  {
+    "id": "q04",
+    "question": "Which Python libraries are highlighted for backend engineering alongside AsyncIO?",
+    "expected_keywords": ["FastAPI", "Pydantic", "Flask"],
+    "expected_fact": "AsyncIO, FastAPI/Flask, and Pydantic are highlighted for backend development.",
+    "source": "job_description",
+    "reference_answer": "FastAPI, Flask, AsyncIO, and Pydantic are specified for backend Python development."
+  },
+  {
+    "id": "q05",
+    "question": "What parser does the candidate use in GitDocs to analyze code structure?",
+    "expected_keywords": ["AST", "Abstract Syntax Tree"],
+    "expected_fact": "AST (Abstract Syntax Tree) analysis was used to parse code structure.",
+    "source": "resume",
+    "reference_answer": "The candidate used AST (Abstract Syntax Tree) analysis and NLP to parse code files."
+  },
+  {
+    "id": "q06",
+    "question": "How many concurrent users did the GitDocs backend achieve?",
+    "expected_keywords": ["500+", "500 concurrent", "500"],
+    "expected_fact": "GitDocs achieved 500+ concurrent users.",
+    "source": "resume",
+    "reference_answer": "The GitDocs backend achieved 500+ concurrent users."
+  },
+  {
+    "id": "q07",
+    "question": "What was the reported reduction in documentation time achieved by GitDocs?",
+    "expected_keywords": ["85%", "85 percent"],
+    "expected_fact": "GitDocs reduced documentation time by up to 85%.",
+    "source": "resume",
+    "reference_answer": "GitDocs reduced documentation time by up to 85% for developers."
+  },
+  {
+    "id": "q08",
+    "question": "Where is Algoleap headquartered?",
+    "expected_keywords": ["Hyderabad"],
+    "expected_fact": "Algoleap is headquartered in Hyderabad, India.",
+    "source": "job_description",
+    "reference_answer": "Algoleap is headquartered in Hyderabad, India."
+  },
+  {
+    "id": "q09",
+    "question": "In what year was Algoleap founded?",
+    "expected_keywords": ["2017"],
+    "expected_fact": "Algoleap was founded in 2017.",
+    "source": "job_description",
+    "reference_answer": "Algoleap was founded in 2017."
+  },
+  {
+    "id": "q10",
+    "question": "How many global employees does Algoleap employ?",
+    "expected_keywords": ["850+", "850"],
+    "expected_fact": "Algoleap employs 850+ employees globally.",
+    "source": "job_description",
+    "reference_answer": "Algoleap has 850+ employees globally."
+  },
+  {
+    "id": "q11",
+    "question": "Which cloud platform is mentioned in the candidate's development tools and certification?",
+    "expected_keywords": ["AWS"],
+    "expected_fact": "AWS is listed under development tools and the AWS Solution Architect program.",
+    "source": "resume",
+    "reference_answer": "AWS (Amazon Web Services) is listed under the candidate's tools and certifications."
+  },
+  {
+    "id": "q12",
+    "question": "What role did the candidate hold at Ethara AI?",
+    "expected_keywords": ["LLM Trainee", "LLM Trainee Intern"],
+    "expected_fact": "The candidate was an LLM Trainee Intern at Ethara AI.",
+    "source": "resume",
+    "reference_answer": "The candidate was an LLM Trainee Intern at Ethara AI in April 2026."
+  },
+  {
+    "id": "q13",
+    "question": "What tasks did the candidate perform during the Ethara AI internship?",
+    "expected_keywords": ["annotation", "preprocessing", "evaluation", "training"],
+    "expected_fact": "Analyzed datasets, evaluated model responses, and performed data preprocessing and annotation.",
+    "source": "resume",
+    "reference_answer": "The candidate analyzed structured datasets, evaluated AI responses, and performed data preprocessing and annotation."
+  },
+  {
+    "id": "q14",
+    "question": "What machine learning platform for agriculture was developed by the candidate?",
+    "expected_keywords": ["Agro-Aid", "Agro Aid"],
+    "expected_fact": "The candidate developed the Agro-Aid Smart Agriculture Platform.",
+    "source": "resume",
+    "reference_answer": "The candidate developed Agro-Aid, a smart agriculture platform."
+  },
+  {
+    "id": "q15",
+    "question": "What accuracy was achieved by Agro-Aid for crop yield prediction?",
+    "expected_keywords": ["95%+", "95%"],
+    "expected_fact": "Agro-Aid achieved 95%+ accuracy in crop yield prediction.",
+    "source": "resume",
+    "reference_answer": "Agro-Aid achieved 95%+ accuracy in crop yield prediction and disease detection."
+  },
+  {
+    "id": "q16",
+    "question": "What evaluation frameworks are listed under nice-to-haves for the AI role?",
+    "expected_keywords": ["LangSmith", "DeepEval"],
+    "expected_fact": "LangSmith and DeepEval are listed as AI evaluation frameworks.",
+    "source": "job_description",
+    "reference_answer": "LangSmith and DeepEval are listed as evaluation frameworks."
+  },
+  {
+    "id": "q17",
+    "question": "What service did Agro-Aid use to provide regional multilingual support?",
+    "expected_keywords": ["Google Translate"],
+    "expected_fact": "Agro-Aid integrated Google Translate for regional multilingual support.",
+    "source": "resume",
+    "reference_answer": "Regional multilingual access was enabled using Google Translate."
+  },
+  {
+    "id": "q18",
+    "question": "Which payment gateway was integrated into the Foodolio platform?",
+    "expected_keywords": ["Stripe"],
+    "expected_fact": "Stripe payment integration was used in Foodolio.",
+    "source": "resume",
+    "reference_answer": "Stripe was integrated for online payment processing in Foodolio."
+  },
+  {
+    "id": "q19",
+    "question": "What authentication mechanism was used in the Foodolio project?",
+    "expected_keywords": ["JWT"],
+    "expected_fact": "JWT-based authentication was implemented for user management in Foodolio.",
+    "source": "resume",
+    "reference_answer": "Foodolio implemented JWT-based authentication for secure user management."
+  },
+  {
+    "id": "q20",
+    "question": "What enterprise platform integrations are listed as nice-to-haves (e.g. ERP/CRM)?",
+    "expected_keywords": ["SAP", "Salesforce", "ServiceNow"],
+    "expected_fact": "SAP, Salesforce, and ServiceNow are listed as enterprise service management platforms.",
+    "source": "job_description",
+    "reference_answer": "Enterprise platforms include SAP, Salesforce, and ServiceNow."
+  },
+  {
+    "id": "q21",
+    "question": "What specialized innovation labs are maintained by Algoleap?",
+    "expected_keywords": ["Algoleap Studios", "Algo-OS"],
+    "expected_fact": "Algoleap Studios is the innovation lab focusing on Algo-OS and AI accelerators.",
+    "source": "job_description",
+    "reference_answer": "Algoleap Studios is the innovation lab focusing on Algo-OS and AI accelerator blueprints."
+  },
+  {
+    "id": "q22",
+    "question": "What architectural solution type is mentioned for combining graphs and RAG?",
+    "expected_keywords": ["GraphRAG"],
+    "expected_fact": "GraphRAG solutions are listed under core focus areas.",
+    "source": "job_description",
+    "reference_answer": "GraphRAG solutions combine graph databases with Retrieval-Augmented Generation."
+  },
+  {
+    "id": "q23",
+    "question": "What type of agentic architecture is mentioned alongside RAG/GraphRAG?",
+    "expected_keywords": ["Agentic Mesh"],
+    "expected_fact": "Agentic Mesh architectures are cited under AI & Automation.",
+    "source": "job_description",
+    "reference_answer": "Agentic Mesh architectures are mentioned under AI & Automation focus areas."
+  },
+  {
+    "id": "q24",
+    "question": "What containerization tool is listed in the candidate's development tools?",
+    "expected_keywords": ["Docker"],
+    "expected_fact": "Docker is listed under the candidate's development tools.",
+    "source": "resume",
+    "reference_answer": "Docker is listed in the candidate's development tools."
+  },
+  {
+    "id": "q25",
+    "question": "Which database systems are listed in the candidate's technical skills?",
+    "expected_keywords": ["MongoDB", "SQL"],
+    "expected_fact": "SQL and MongoDB are listed as database technologies in the candidate's skills.",
+    "source": "resume",
+    "reference_answer": "The candidate has experience with SQL and MongoDB."
+  },
+  {
+    "id": "q26",
+    "question": "What browser automation framework is listed under the candidate's skills?",
+    "expected_keywords": ["Playwright"],
+    "expected_fact": "Playwright is listed under Core CS and Automation Scripting.",
+    "source": "resume",
+    "reference_answer": "Playwright is listed for browser automation and scripting."
+  },
+  {
+    "id": "q27",
+    "question": "Which university did the candidate attend?",
+    "expected_keywords": ["VIT Bhopal", "Vellore Institute of Technology"],
+    "expected_fact": "The candidate attended Vellore Institute of Technology, Bhopal.",
+    "source": "resume",
+    "reference_answer": "The candidate attended VIT Bhopal (Vellore Institute of Technology, Bhopal)."
+  },
+  {
+    "id": "q28",
+    "question": "What company software engineering simulation certification did the candidate complete?",
+    "expected_keywords": ["JPMorganChase", "JPMorgan Chase"],
+    "expected_fact": "The candidate completed the JPMorganChase Software Engineering Job Simulation.",
+    "source": "resume",
+    "reference_answer": "The candidate completed the JPMorganChase Software Engineering Job Simulation."
+  },
+  {
+    "id": "q29",
+    "question": "What foundation certification in AI does the candidate hold from IBM?",
+    "expected_keywords": ["AI Fundamentals"],
+    "expected_fact": "IBM - AI Fundamentals - Foundations for Understanding AI.",
+    "source": "resume",
+    "reference_answer": "The candidate holds the IBM AI Fundamentals certification."
+  },
+  {
+    "id": "q30",
+    "question": "What connectors must be configured in Microsoft Copilot Studio according to the job?",
+    "expected_keywords": ["Power Platform", "Power Platform connectors"],
+    "expected_fact": "Power Platform connectors must be configured in Copilot Studio.",
+    "source": "job_description",
+    "reference_answer": "Power Platform connectors are specified for Microsoft Copilot Studio integration."
+  },
+  {
+    "id": "q31",
+    "question": "What Azure integration is required for Copilot Studio agents?",
+    "expected_keywords": ["Azure OpenAI"],
+    "expected_fact": "Azure OpenAI integrations are specified for Copilot Studio agents.",
+    "source": "job_description",
+    "reference_answer": "Azure OpenAI integrations are required for extending Copilot Studio agents."
+  },
+  {
+    "id": "q32",
+    "question": "How many code files were analyzed by the GitDocs smart parsing engine?",
+    "expected_keywords": ["1,000+", "1000+", "1,000"],
+    "expected_fact": "GitDocs extracted insights from over 1,000+ code files.",
+    "source": "resume",
+    "reference_answer": "The GitDocs parsing engine extracted insights from over 1,000+ code files."
+  }
+]
