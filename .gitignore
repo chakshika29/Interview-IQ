@@ -1,5 +1,10 @@
 # Environment variables and API keys (CRITICAL: NEVER COMMIT)
 .env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
 
 # Virtual environment
 venv/
@@ -7,6 +12,14 @@ venv/
 
 # Sensitive data directory (Candidate resumes contain personal contact details)
 data/
+
+# Private session recordings & session files
+storage/recordings/
+storage/sessions/
+
+# Frontend dependencies & production build outputs
+frontend/node_modules/
+frontend/dist/
 
 # Local embedding and document caches
 .cache/

@@ -1,109 +1,49 @@
 import os
-import random
-import time
+from typing import Any
 from dotenv import load_dotenv
 from google import genai
-from google.genai import errors, types
 
 from app.schemas import Feedback, Question, SkillGap
+from app.services.gemini_service import gemini_service
 
-# WHY: Load environment variables so we can securely access GEMINI_API_KEY from .env
+# Load environment variables
 load_dotenv()
 
-# WHY: gemini-3.5-flash is fast, cost-efficient, and supports structured JSON outputs.
-# We also allow overriding via GEMINI_MODEL if specified.
-MODEL_NAME = os.getenv("GEMINI_MODEL", "gemini-3.5-flash")
+# Configured model for backward compatibility
+MODEL_NAME = gemini_service.primary_model
 
-# WHY: Initialize the Gemini client dynamically from environment or Streamlit secrets
+
 def get_client() -> genai.Client:
     """
-    Get or initialize the Google GenAI client from environment or Streamlit secrets.
-
-    WHY: In cloud deployments (Streamlit Cloud, Render, Railway, Hugging Face Spaces),
-    API keys are provided via cloud secrets or container environment variables.
+    Get or initialize the Google GenAI client via gemini_service.
+    Retained for backward compatibility with existing tests and scripts.
     """
-    api_key = os.getenv("GEMINI_API_KEY")
-    if not api_key:
-        try:
-            import streamlit as st
-            api_key = st.secrets.get("GEMINI_API_KEY")
-            if api_key:
-                os.environ["GEMINI_API_KEY"] = api_key
-        except Exception:
-            pass
-    if not api_key:
-        raise ValueError("GEMINI_API_KEY is not set. Please set it in .env, environment, or Streamlit secrets.")
-    return genai.Client(api_key=api_key)
+    return gemini_service.get_client()
 
 
 def generate_with_retry(
-    client_instance: genai.Client,
+    client_instance: Any,
     model: str,
     contents: str,
     schema: type,
-    max_retries: int = 5,
-    initial_delay: float = 2.0,
+    max_retries: int = 4,
+    initial_delay: float = 1.5,
 ):
     """
-    Execute a Gemini generation call with structured JSON schema and exponential backoff.
-
-    WHY: The free Gemini API tier enforces strict rate limits (HTTP 429) and can
-    experience temporary server spikes (HTTP 503). Retrying with exponential
-    backoff (delay * 2^attempt + jitter) ensures the application recovers automatically
-    instead of failing abruptly for the user.
+    Structured generation delegate routed through resilient GeminiService.
     """
-    delay = initial_delay
-    last_exception = None
-
-    for attempt in range(max_retries):
-        try:
-            # WHY: Enforce JSON structure matching our Pydantic schema directly in the API call.
-            config = types.GenerateContentConfig(
-                response_mime_type="application/json",
-                response_schema=schema,
-                temperature=0.7,
-            )
-            response = client_instance.models.generate_content(
-                model=model,
-                contents=contents,
-                config=config,
-            )
-
-            # WHY: google-genai automatically parses JSON into the Pydantic model via resp.parsed.
-            if response.parsed is not None and isinstance(response.parsed, schema):
-                return response.parsed
-
-            # WHY: Fallback to manual validation from raw text in case parsing was deferred.
-            return schema.model_validate_json(response.text)
-
-        except (errors.ClientError, errors.ServerError, Exception) as exc:
-            last_exception = exc
-            err_msg = str(exc)
-
-            # Check for rate-limiting (429) or temporary server overload (503)
-            is_rate_limit = "429" in err_msg or "RESOURCE_EXHAUSTED" in err_msg
-            is_unavailable = "503" in err_msg or "UNAVAILABLE" in err_msg or "high demand" in err_msg
-
-            if (is_rate_limit or is_unavailable) and attempt < max_retries - 1:
-                # Add random jitter to avoid thundering-herd retry collisions
-                sleep_time = delay + random.uniform(0.5, 1.5)
-                time.sleep(sleep_time)
-                delay *= 2
-                continue
-
-            raise last_exception
-
-    raise RuntimeError(f"Generation failed after {max_retries} attempts: {last_exception}")
+    return gemini_service.generate_structured(
+        prompt=contents,
+        schema=schema,
+        max_retries_per_model=max_retries,
+        initial_delay=initial_delay,
+    )
 
 
 def extract_skill_gap(jd_chunks, resume_chunks) -> SkillGap:
     """
-    Compare job description requirements against the resume to identify matched and missing skills.
-
-    WHY: RAG interview prep begins by diagnosing what the candidate already possesses versus
-    what competencies the employer expects, highlighting areas the candidate must practice.
+    Compare job description requirements against resume to identify matched and missing skills.
     """
-    # Join chunk texts into single readable strings for the LLM
     jd_text = "\n\n".join(c.text if hasattr(c, "text") else str(c) for c in jd_chunks)
     resume_text = "\n\n".join(c.text if hasattr(c, "text") else str(c) for c in resume_chunks)
 
@@ -120,18 +60,14 @@ JOB DESCRIPTION:
 CANDIDATE RESUME:
 {resume_text}
 """
-    return generate_with_retry(get_client(), MODEL_NAME, prompt, SkillGap)
+    return gemini_service.generate_structured(prompt, SkillGap)
 
 
 def generate_question(retriever, difficulty: str = "medium") -> Question:
     """
-    Generate an interview question targeted at specific skills/projects in the candidate's resume
-    that are relevant to the target job description.
-
-    WHY: Generic interview questions do not prepare candidates effectively. Grounding the question
-    in the candidate's actual projects and the job requirements creates a realistic mock interview.
+    Generate an interview question targeted at specific skills/projects in candidate's resume
+    that intersect with the target job description.
     """
-    # WHY: Retrieve context from resume and job description to ground the question in real data
     resume_docs = retriever.search("technical projects tools architecture hands-on experience", k=3, source="resume")
     jd_docs = retriever.search("core requirements responsibilities qualifications skills", k=3, source="job_description")
 
@@ -155,14 +91,12 @@ Requirements:
 3. Identify the main technical topic.
 4. Set difficulty strictly to '{difficulty}'.
 """
-    return generate_with_retry(get_client(), MODEL_NAME, prompt, Question)
+    return gemini_service.generate_structured(prompt, Question)
 
 
 def get_next_difficulty(current_difficulty: str, last_score: int) -> str:
     """
-    Determine next question difficulty based on candidate's score.
-
-    WHY:
+    Determine next question difficulty based on candidate's score:
     - Score >= 8: Advances difficulty (easy -> medium -> hard).
     - Score <= 4: Drops difficulty (hard -> medium -> easy) to reinforce weak topics.
     - Score 5-7: Keeps current difficulty for balanced progression.
@@ -185,12 +119,6 @@ def generate_adaptive_question(
 ) -> Question:
     """
     Generate the next question adaptively based on previous score and identified weaknesses.
-
-    WHY: Adaptive questioning simulates real technical interview loops:
-    1. If the candidate struggled (score <= 4), the interviewer asks an easier follow-up
-       on the SAME weak topic to test fundamentals.
-    2. If the candidate aced the question (score >= 8), the interviewer ramps up difficulty
-       to test edge cases, scalability, and deeper trade-offs.
     """
     if last_feedback is not None:
         next_difficulty = get_next_difficulty(current_difficulty, last_feedback.score)
@@ -220,7 +148,7 @@ Generate an easier, foundational follow-up question on "{target_topic}" at the '
 Goal: Help the candidate demonstrate their foundational understanding of this topic before moving on to advanced architecture.
 Identify the topic as "{target_topic}" and set difficulty strictly to '{next_difficulty}'.
 """
-        return generate_with_retry(get_client(), MODEL_NAME, prompt, Question)
+        return gemini_service.generate_structured(prompt, Question)
 
     # Case B: High score (>= 8) -> Challenge with harder difficulty
     if last_feedback is not None and last_feedback.score >= 8 and last_question is not None:
@@ -246,24 +174,19 @@ Focus on complex edge cases, distributed failure modes, concurrency, latency tra
 intersecting the candidate's resume projects and the job requirements.
 Identify the technical topic and set difficulty strictly to '{next_difficulty}'.
 """
-        return generate_with_retry(get_client(), MODEL_NAME, prompt, Question)
+        return gemini_service.generate_structured(prompt, Question)
 
     # Case C: First question or moderate score (5-7) -> Standard grounded question
     return generate_question(retriever, difficulty=next_difficulty)
 
 
-
 def score_answer(retriever, question, answer: str) -> Feedback:
     """
     Evaluate a candidate's answer against the target job requirements using RAG context.
-
-    WHY: Scoring must be objective and grounded in what production teams actually need.
-    Retrieving job requirements ensures the grading rubric aligns with the employer's expectations.
     """
     q_text = question.question if isinstance(question, Question) else str(question)
     q_topic = question.topic if isinstance(question, Question) else ""
 
-    # WHY: Retrieve the specific job expectations matching the question's topic to ground the scoring
     jd_docs = retriever.search(f"{q_topic} {q_text}", k=3, source="job_description")
     jd_context = "\n---\n".join(d["text"] for d in jd_docs)
 
@@ -284,9 +207,7 @@ Evaluation Instructions:
 3. List specific gaps (missing edge cases, production concerns, architectural trade-offs, or requirements from the job not met).
 4. Provide a clear, polished model answer that demonstrates what a 10/10 response looks like for this AI Engineer role.
 """
-    feedback = generate_with_retry(get_client(), MODEL_NAME, prompt, Feedback)
-
-    # WHY: Enforce schema bounds (1 to 10) in case the model outputs an edge-case integer
+    feedback = gemini_service.generate_structured(prompt, Feedback)
     feedback.score = max(1, min(10, feedback.score))
     return feedback
 
@@ -295,10 +216,6 @@ def answer_query_with_guardrail(retriever, query: str) -> str:
     """
     Answer an informational question strictly based on retrieved documents, with a guardrail
     that returns 'Information not found in the documents.' if retrieval is weak.
-
-    WHY: Hallucination prevention is a critical requirement in production RAG systems.
-    If the vector/hybrid search does not locate relevant text, or if the retrieved chunks
-    are below the confidence threshold, the model must refuse to guess.
     """
     docs = retriever.search(query, k=3, mode="hybrid")
     if retriever.is_retrieval_weak(docs):
@@ -317,19 +234,4 @@ Context:
 Question:
 {query}
 """
-    delay = 2.0
-    for attempt in range(5):
-        try:
-            resp = get_client().models.generate_content(
-                model=MODEL_NAME,
-                contents=prompt,
-            )
-            return resp.text.strip()
-        except (errors.ClientError, errors.ServerError, Exception) as exc:
-            err_msg = str(exc)
-            if ("429" in err_msg or "503" in err_msg) and attempt < 4:
-                time.sleep(delay + random.uniform(0.5, 1.5))
-                delay *= 2
-                continue
-            raise exc
-
+    return gemini_service.generate_text(prompt)

@@ -1,16 +1,15 @@
 services:
-  # Streamlit Web UI Service
+  # React.js Vite Frontend Service
   - type: web
-    name: interviewiq-ui
-    env: python
+    name: interviewiq-react
+    env: static
     plan: free
-    buildCommand: pip install -r requirements.txt
-    startCommand: streamlit run streamlit_app.py --server.port $PORT --server.address 0.0.0.0 --server.headless true
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
     envVars:
-      - key: GEMINI_API_KEY
-        sync: false
-      - key: PYTHON_VERSION
-        value: 3.12.0
+      - key: VITE_API_URL
+        value: https://interviewiq-api.onrender.com
 
   # FastAPI REST Backend Service
   - type: web
@@ -19,6 +18,21 @@ services:
     plan: free
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-3.5-flash-lite
+      - key: PYTHON_VERSION
+        value: 3.12.0
+
+  # Legacy Streamlit Web UI Service (Preserved)
+  - type: web
+    name: interviewiq-legacy-ui
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: streamlit run streamlit_app.py --server.port $PORT --server.address 0.0.0.0 --server.headless true
     envVars:
       - key: GEMINI_API_KEY
         sync: false

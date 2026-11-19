@@ -1,10 +1,14 @@
 import tempfile
 import os
+import pytest
 from app.ingest import (
     load_document,
     split_sentences,
     split_text,
     split_text_by_boundaries,
+    validate_document_content,
+    extract_document_preview,
+    read_pages,
 )
 
 
@@ -57,3 +61,41 @@ def test_load_document_text_file():
     finally:
         if os.path.exists(temp_path):
             os.remove(temp_path)
+
+
+def test_validate_document_content():
+    """Verify validation catches empty or insufficient documents."""
+    with pytest.raises(ValueError):
+        validate_document_content("", "empty.txt")
+
+    with pytest.raises(ValueError):
+        validate_document_content("Too short text here", "short.txt", min_words=10)
+
+    valid_text = "This is a full document with sufficient words to pass the validation check required for processing."
+    assert validate_document_content(valid_text, "valid.txt", min_words=10) == valid_text
+
+
+def test_extract_document_preview():
+    """Verify document preview extract heuristics."""
+    text = "SKILLS\nPython, FastAPI, Docker\n\nEXPERIENCE\nAI Engineer at Google building agent workflows."
+    preview = extract_document_preview(text)
+    assert preview["word_count"] > 5
+    assert len(preview["detected_sections"]) >= 1
+
+
+def test_docx_reading():
+    """Verify DOCX reading via python-docx."""
+    import docx
+    temp_docx = os.path.join(tempfile.gettempdir(), f"test_{os.getpid()}.docx")
+    try:
+        doc = docx.Document()
+        doc.add_heading("Technical Resume", level=1)
+        doc.add_paragraph("Experienced with LangChain, FastAPI, and Vector Databases.")
+        doc.save(temp_docx)
+
+        pages = read_pages(temp_docx)
+        assert len(pages) == 1
+        assert "LangChain" in pages[0][1]
+    finally:
+        if os.path.exists(temp_docx):
+            os.remove(temp_docx)

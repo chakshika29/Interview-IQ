@@ -1,54 +1,29 @@
 import hashlib
 import json
 import os
-import random
 import re
-import time
 import uuid
 import chromadb
 from dotenv import load_dotenv
-from google import genai
-from google.genai import errors, types
 from rank_bm25 import BM25Okapi
 
-# WHY: Load environment variables so we can access GEMINI_API_KEY
+from app.services.gemini_service import gemini_service
+
 load_dotenv()
 
-EMBED_MODEL = "gemini-embedding-001"
+EMBED_MODEL = gemini_service.embed_model
 
+def get_client():
+    """Backward compatibility hook."""
+    return gemini_service.get_client()
 
-def get_client() -> genai.Client:
-    """
-    Get or initialize the Google GenAI client from environment or Streamlit secrets.
-
-    WHY: In cloud deployments (Streamlit Cloud, Render, Railway, Hugging Face Spaces),
-    API keys are provided via cloud secrets or container environment variables.
-    """
-    api_key = os.getenv("GEMINI_API_KEY")
-    if not api_key:
-        try:
-            import streamlit as st
-            api_key = st.secrets.get("GEMINI_API_KEY")
-            if api_key:
-                os.environ["GEMINI_API_KEY"] = api_key
-        except Exception:
-            pass
-    if not api_key:
-        raise ValueError("GEMINI_API_KEY is not set. Please set it in .env, environment, or Streamlit secrets.")
-    return genai.Client(api_key=api_key)
-
-# WHY: Embedding caching directory and file path
+# Embedding caching directory and file path
 CACHE_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".cache")
 CACHE_FILE = os.path.join(CACHE_DIR, "embeddings.json")
 
 
 def load_embedding_cache() -> dict[str, list[float]]:
-    """
-    Load cached embeddings from local JSON storage.
-
-    WHY: Free Gemini API tier has strict requests-per-minute limits. Caching embeddings
-    locally avoids re-embedding unchanged documents every time the app or tests run.
-    """
+    """Load cached embeddings from local JSON storage."""
     if os.path.exists(CACHE_FILE):
         try:
             with open(CACHE_FILE, "r", encoding="utf-8") as f:
@@ -76,49 +51,18 @@ def get_cache_key(text: str, task: str) -> str:
 def embed_batch_with_retry(
     texts: list[str],
     task: str,
-    max_retries: int = 5,
+    max_retries: int = 4,
     initial_delay: float = 2.0,
 ) -> list[list[float]]:
     """
-    Call Gemini embed_content API with exponential backoff on HTTP 429 rate limits.
-
-    WHY: Embedding multiple chunks rapidly can trigger rate limit (429) errors.
-    Exponential backoff ensures transient errors are retried automatically.
+    Call Gemini embed_content API via centralized GeminiService.
     """
-    delay = initial_delay
-    last_err = None
-
-    for attempt in range(max_retries):
-        try:
-            client_instance = get_client()
-            resp = client_instance.models.embed_content(
-                model=EMBED_MODEL,
-                contents=texts,
-                config=types.EmbedContentConfig(task_type=task),
-            )
-            return [e.values for e in resp.embeddings]
-        except (errors.ClientError, errors.ServerError, Exception) as exc:
-            last_err = exc
-            err_msg = str(exc)
-            is_rate_limit = "429" in err_msg or "RESOURCE_EXHAUSTED" in err_msg
-            is_unavailable = "503" in err_msg or "UNAVAILABLE" in err_msg
-
-            if (is_rate_limit or is_unavailable) and attempt < max_retries - 1:
-                sleep_time = delay + random.uniform(0.5, 1.5)
-                time.sleep(sleep_time)
-                delay *= 2
-                continue
-            raise last_err
-
-    raise RuntimeError(f"Embedding failed after {max_retries} attempts: {last_err}")
+    return gemini_service.embed_texts(texts, task_type=task, max_retries=max_retries)
 
 
 def embed(texts: list[str], task: str) -> list[list[float]]:
     """
-    Turn a list of texts into vector embeddings using the cache first.
-
-    WHY: Checks the local cache before making API calls. Only missing texts
-    are sent to the Gemini API, saving quota and accelerating execution.
+    Turn a list of texts into vector embeddings using the local cache first.
     """
     if not texts:
         return []
@@ -154,11 +98,7 @@ def embed(texts: list[str], task: str) -> list[list[float]]:
 
 
 def tokenize(text: str) -> list[str]:
-    """
-    Tokenize text into lowercase alphanumeric words for BM25 keyword matching.
-
-    WHY: BM25 computes term frequencies over discrete word tokens rather than vectors.
-    """
+    """Tokenize text into lowercase alphanumeric words for BM25 keyword matching."""
     return [w for w in re.findall(r"\w+", text.lower()) if len(w) > 1]
 
 
@@ -166,19 +106,23 @@ class Retriever:
     """
     Hybrid retriever combining Gemini dense semantic vector search with BM25 sparse keyword search,
     merged via Reciprocal Rank Fusion (RRF).
-
-    WHY: Dense vector search excels at high-level semantic meaning and paraphrasing,
-    while BM25 keyword search excels at exact acronyms, specific library names (e.g. LangGraph),
-    and precise technical terms. Hybrid RRF merges both strengths without requiring a heavy
-    GPU cross-encoder model.
     """
 
-    def __init__(self):
+    def __init__(self, session_id: str | None = None):
+        self.session_id = session_id or uuid.uuid4().hex
         # Cosine distance collection in Chroma
-        self.col = chromadb.Client().create_collection(
-            f"iq-{uuid.uuid4().hex}",
-            metadata={"hnsw:space": "cosine"},
-        )
+        safe_col_name = f"iq-{re.sub(r'[^a-zA-Z0-9_-]', '', self.session_id)}"[:63]
+        chroma_client = chromadb.Client()
+        try:
+            self.col = chroma_client.get_or_create_collection(
+                safe_col_name,
+                metadata={"hnsw:space": "cosine"},
+            )
+        except Exception:
+            self.col = chroma_client.create_collection(
+                f"iq-{uuid.uuid4().hex}",
+                metadata={"hnsw:space": "cosine"},
+            )
         self.chunks: list[dict] = []
         self.bm25: BM25Okapi | None = None
         self.tokenized_corpus: list[list[str]] = []
@@ -215,6 +159,8 @@ class Retriever:
 
     def search_vector(self, query: str, k: int = 4, source: str | None = None) -> list[dict]:
         """Dense semantic vector similarity search via ChromaDB."""
+        if not self.chunks:
+            return []
         where = {"source": source} if source else None
         res = self.col.query(
             query_embeddings=embed([query], "RETRIEVAL_QUERY"),
@@ -274,14 +220,11 @@ class Retriever:
     ) -> list[dict]:
         """
         Merge vector and BM25 search rankings using Reciprocal Rank Fusion (RRF).
-
-        WHY: RRF combines the rank positions from multiple distinct retrieval algorithms:
-        RRF_Score = 1 / (60 + rank_vector) + 1 / (60 + rank_bm25).
-        It does not require normalising different score distributions (e.g. cosine vs BM25),
-        and gives top priority to documents favored by both search strategies.
         """
-        pool_size = max(20, k * 3)
+        if not self.chunks:
+            return []
 
+        pool_size = max(20, k * 3)
         vector_results = self.search_vector(query, k=pool_size, source=source)
         bm25_results = self.search_bm25(query, k=pool_size, source=source)
 
@@ -312,9 +255,6 @@ class Retriever:
     def search(self, query: str, k: int = 4, source: str | None = None, mode: str = "hybrid") -> list[dict]:
         """
         Primary search interface supporting 'hybrid', 'vector', and 'bm25' retrieval modes.
-
-        WHY: Defaulting to hybrid provides the strongest retrieval quality, while supporting
-        'vector' and 'bm25' modes enables head-to-head empirical benchmarking in Phase 4.
         """
         if mode == "vector":
             return self.search_vector(query, k=k, source=source)
@@ -325,19 +265,13 @@ class Retriever:
     def is_retrieval_weak(self, results: list[dict], min_sim: float = 0.35) -> bool:
         """
         Check if the retrieved results have insufficient relevance to the query.
-
-        WHY: Guardrail mechanism. If the documents don't contain relevant facts,
-        recognizing weak retrieval prevents the model from hallucinating false answers.
         """
         if not results:
             return True
 
-        # If vector distance or similarity is available, check top result
         top = results[0]
         if "score" in top and "distance" in top:
-            # For vector mode, score is similarity
             return top["score"] < min_sim
         if "rrf_score" in top:
-            # If RRF score is tiny (only low ranks in one list)
             return top["rrf_score"] < (1.0 / (60 + 15))
         return False

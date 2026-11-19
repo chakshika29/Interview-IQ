@@ -1,32 +1,65 @@
+import os
 import re
+from typing import Any
 from pypdf import PdfReader
 from app.schemas import Chunk
 
 
 def read_pages(path: str) -> list[tuple[int, str]]:
     """
-    Return a list of (page_number, text) tuples from a PDF or text file.
-
-    WHY: Different file types require different extractors: pypdf extracts text
-    per page from PDFs, while standard UTF-8 text files have a single page.
+    Return a list of (page_number, text) tuples from PDF, DOCX, or text file.
     """
-    if path.lower().endswith(".pdf"):
-        pages = PdfReader(path).pages
-        return [(i + 1, p.extract_text() or "") for i, p in enumerate(pages)]
-    with open(path, encoding="utf-8") as f:
+    lower = path.lower()
+    if lower.endswith(".pdf"):
+        reader = PdfReader(path)
+        pages = []
+        for i, p in enumerate(reader.pages):
+            text = p.extract_text() or ""
+            pages.append((i + 1, text))
+        return pages
+
+    if lower.endswith(".docx"):
+        import docx
+        doc = docx.Document(path)
+        lines = []
+        for p in doc.paragraphs:
+            if p.text.strip():
+                lines.append(p.text.strip())
+        for table in doc.tables:
+            for row in table.rows:
+                row_cells = [c.text.strip() for c in row.cells if c.text.strip()]
+                if row_cells:
+                    lines.append(" | ".join(dict.fromkeys(row_cells)))
+        full_text = "\n\n".join(lines)
+        return [(1, full_text)]
+
+    # Standard plain text file
+    with open(path, encoding="utf-8", errors="replace") as f:
         return [(1, f.read())]
+
+
+def validate_document_content(text: str, filename: str = "document", min_words: int = 15) -> str:
+    """
+    Validate that extracted document text is non-empty, readable, and meets minimum content length.
+    """
+    clean = text.strip()
+    if not clean:
+        raise ValueError(f"Uploaded file '{filename}' contains no readable text or is an empty/scanned document.")
+
+    words = clean.split()
+    if len(words) < min_words:
+        raise ValueError(
+            f"Uploaded file '{filename}' has insufficient content ({len(words)} words). "
+            f"Please provide a complete document with at least {min_words} words."
+        )
+    return clean
 
 
 def split_sentences(text: str) -> list[str]:
     """
     Split text into individual sentences while preserving punctuation and meaning.
-
-    WHY: Breaking sentences mid-stream ruins semantic context for vector search.
-    Using regex looking for sentence terminators (. ! ?) keeps ideas intact.
     """
-    # Normalize carriage returns and non-breaking spaces
     clean = text.replace("\r", " ").replace("\xa0", " ")
-    # Match sentences ending with punctuation followed by whitespace
     raw_sentences = re.split(r"(?<=[.!?])\s+", clean)
     return [s.strip() for s in raw_sentences if s.strip()]
 
@@ -34,22 +67,15 @@ def split_sentences(text: str) -> list[str]:
 def split_text_by_boundaries(text: str, target_size: int = 600, overlap: int = 100) -> list[str]:
     """
     Chunk text along natural paragraph and sentence boundaries.
-
-    WHY: Fixed character splitting (e.g. text[start:start+size]) cuts words and sentences
-    in half. Paragraph and sentence boundary chunking ensures that each chunk represents
-    a complete, coherent thought for more accurate embedding retrieval.
     """
-    # Step 1: Split into paragraphs by blank lines or bullet lists
     paragraphs = [p.strip() for p in re.split(r"\n\s*\n", text) if p.strip()]
     if not paragraphs:
-        # Fallback if there are no blank lines: treat whole text as one paragraph
         paragraphs = [text.strip()] if text.strip() else []
 
     chunks = []
     current_units = []
     current_length = 0
 
-    # Expand paragraphs into sentences if a single paragraph exceeds target_size
     units = []
     for para in paragraphs:
         if len(para) <= target_size:
@@ -61,12 +87,10 @@ def split_text_by_boundaries(text: str, target_size: int = 600, overlap: int = 1
     for unit in units:
         unit_len = len(unit)
 
-        # If adding this unit exceeds target_size, flush the accumulated chunk
         if current_length + unit_len > target_size and current_units:
             chunk_content = " ".join(current_units)
             chunks.append(chunk_content)
 
-            # Carry over the last unit for overlap if it is reasonably sized
             if overlap > 0 and len(current_units[-1]) < target_size:
                 current_units = [current_units[-1]]
                 current_length = len(current_units[0])
@@ -84,12 +108,7 @@ def split_text_by_boundaries(text: str, target_size: int = 600, overlap: int = 1
 
 
 def split_text(text: str, size: int = 800, overlap: int = 100) -> list[str]:
-    """
-    Legacy fixed-character chunking (retained for backward compatibility and benchmarking).
-
-    WHY: Keeping the original chunker allows us to benchmark naive fixed chunking
-    against sentence-boundary chunking in Phase 4 evaluations.
-    """
+    """Legacy fixed-character chunking (retained for backward compatibility and benchmarking)."""
     pieces, start = [], 0
     while start < len(text):
         pieces.append(text[start : start + size])
@@ -103,27 +122,62 @@ def load_document(
     chunk_size: int = 600,
     overlap: int = 100,
     use_boundaries: bool = True,
+    session_id: str | None = None,
 ) -> list[Chunk]:
     """
     Load a document and split it into typed Chunk objects.
-
-    WHY: Encapsulating the extraction into Chunk objects tags every piece with its
-    document source ('resume' or 'job_description') and original page number for citations.
     """
     chunks = []
-    for page, text in read_pages(path):
+    pages = read_pages(path)
+    prefix = f"{session_id}-{source}" if session_id else source
+
+    for page, text in pages:
+        clean_text = text.strip()
+        if not clean_text:
+            continue
+
         if use_boundaries:
-            pieces = split_text_by_boundaries(text, target_size=chunk_size, overlap=overlap)
+            pieces = split_text_by_boundaries(clean_text, target_size=chunk_size, overlap=overlap)
         else:
-            pieces = split_text(text, size=chunk_size, overlap=overlap)
+            pieces = split_text(clean_text, size=chunk_size, overlap=overlap)
 
         for j, piece in enumerate(pieces):
             chunks.append(
                 Chunk(
-                    id=f"{source}-{page}-{j}",
+                    id=f"{prefix}-{page}-{j}",
                     text=piece,
                     source=source,
                     page=page,
                 )
             )
     return chunks
+
+
+def extract_document_preview(text: str) -> dict[str, Any]:
+    """
+    Extract a quick summary preview of the document: word count, detected sections, and snippet.
+    """
+    lines = [line.strip() for line in text.splitlines() if line.strip()]
+    word_count = len(text.split())
+    char_count = len(text)
+
+    # Heuristic section headers detection
+    potential_sections = []
+    common_headers = [
+        "education", "experience", "projects", "skills", "technical skills",
+        "work experience", "certifications", "summary", "responsibilities",
+        "requirements", "qualifications", "preferred qualifications",
+    ]
+    for line in lines:
+        cleaned_line = line.lower().rstrip(":")
+        if cleaned_line in common_headers or (len(line) < 40 and line.isupper() and len(line) > 3):
+            if line not in potential_sections:
+                potential_sections.append(line)
+
+    return {
+        "word_count": word_count,
+        "char_count": char_count,
+        "line_count": len(lines),
+        "detected_sections": potential_sections[:8],
+        "preview_snippet": text[:500] + ("..." if len(text) > 500 else ""),
+    }
